@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Potato Disease Classification | AI Diagnostics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #34d399; /* Brighter Emerald */
+            --primary-dark: #10b981;
+            --primary-glow: rgba(52, 211, 153, 0.5);
+            --bg-deep: #0f172a; /* Slightly lighter than #020617 */
+        }
+        
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: var(--bg-deep);
+            color: #f8fafc; /* Brighter Slate White */
+            overflow-x: hidden;
+        }
+
+        /* Ambient Glow Blobs */
+        .glow-blob {
+            position: fixed;
+            width: 800px;
+            height: 800px;
+            border-radius: 50%;
+            filter: blur(140px);
+            z-index: -1;
+            opacity: 0.25; /* Increased opacity from 0.15 */
+            pointer-events: none;
+        }
+        .blob-1 { top: -200px; left: -200px; background: #10b981; }
+        .blob-2 { bottom: -200px; right: -200px; background: #60a5fa; } /* Brighter Blue */
+
+        h1, h2, h3 {
+            font-family: 'Outfit', sans-serif;
+            letter-spacing: -0.01em;
+        }
+
+        .glass-card {
+            background: rgba(51, 65, 85, 0.6); /* Brighter slate blue base */
+            backdrop-filter: blur(24px) saturate(220%);
+            border: 1px solid rgba(255, 255, 255, 0.25); /* More visible border */
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem;
+        }
+
+        .text-gradient {
+            background: linear-gradient(to bottom right, #ffffff 40%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .text-gradient-primary {
+            background: linear-gradient(135deg, #34d399 0%, #6ee7b7 100%); /* Much brighter gradient */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(180deg, transparent, var(--primary), transparent);
+            opacity: 0.8;
+            box-shadow: 0 0 20px var(--primary-glow);
+            animation: scan 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            z-index: 20;
+            display: none;
+        }
+
+        @keyframes scan {
+            0% { transform: translateY(-10px); }
+            100% { transform: translateY(500px); }
+        }
+
+        .premium-btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            box-shadow: 0 10px 20px -5px var(--primary-glow);
+            transition: all 0.3s ease;
+        }
+        .premium-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -5px var(--primary-glow);
+            filter: brightness(1.1);
+        }
+
+        .dropzone-inner-glow {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, var(--primary-glow) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        #dropzone:hover .dropzone-inner-glow {
+            opacity: 0.1;
+        }
+
+        .loading-spinner {
+            border: 3px solid rgba(16, 185, 129, 0.1);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results-glow {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 150px;
+            height: 150px;
+            background: var(--primary);
+            filter: blur(100px);
+            opacity: 0.1;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Background Accents -->
+    <div class="glow-blob blob-1"></div>
+    <div class="glow-blob blob-2"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-8 py-12 sm:py-24">
+        <!-- Header -->
+        <header class="text-center mb-16 sm:mb-32 space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-top-4 duration-1000">
+            <div class="inline-flex items-center space-x-3 bg-emerald-500/10 border border-emerald-500/20 px-5 py-2 rounded-full text-emerald-400 text-[10px] sm:text-xs font-bold tracking-[0.3em] uppercase backdrop-blur-sm">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Neural Intelligence v1.0</span>
+            </div>
+            <h1 class="text-5xl sm:text-7xl md:text-9xl font-extrabold text-gradient leading-[1.1] sm:leading-none">
+                Potato Disease <br class="hidden sm:block">
+                <span class="text-gradient-primary">Classification</span>
+            </h1>
+            <p class="text-base sm:text-lg text-slate-400/80 max-w-2xl mx-auto font-medium leading-relaxed tracking-wide px-4">
+                Experience the next generation of agricultural diagnostics. Fast, precise, and powered by deep learning.
+            </p>
+        </header>
+
+        <!-- Main Workspace -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
+            <!-- Left: Upload Section -->
+            <div class="lg:col-span-5 space-y-8 flex flex-col">
+                <div class="flex items-center space-x-4 px-2">
+                    <div class="w-1 h-4 bg-emerald-500 rounded-full"></div>
+                    <h3 class="text-xs font-black tracking-[0.25em] uppercase text-slate-500">Specimen Capture</h3>
+                </div>
+                
+                <div id="dropzone" class="glass-card rounded-[3rem] p-1 flex-1 flex flex-col cursor-pointer relative overflow-hidden group">
+                    <div class="dropzone-inner-glow"></div>
+                    <div class="flex-1 m-3 rounded-[2.5rem] border-2 border-dashed border-slate-700/50 group-hover:border-emerald-500/30 transition-colors flex flex-col items-center justify-center p-12 text-center relative z-10">
+                        <input type="file" id="fileInput" class="hidden" accept="image/*">
+                        
+                        <div class="w-28 h-28 rounded-[2rem] bg-slate-900 border border-slate-800 flex items-center justify-center text-emerald-400 group-hover:scale-110 group-hover:text-emerald-300 transition-all duration-700 shadow-2xl mb-10">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                        </div>
+
+                        <div class="space-y-4 mb-10">
+                            <h3 class="text-4xl font-bold text-gradient">Analyze Leaf</h3>
+                            <p class="text-slate-500 max-w-[280px] mx-auto text-sm leading-relaxed">Place your leaf specimen here for automated neural processing.</p>
+                        </div>
+
+                        <button class="premium-btn text-slate-900 font-black px-12 py-4 rounded-2xl text-sm tracking-widest uppercase active:scale-95">Initialize Upload</button>
+                    </div>
+
+                    <div id="previewContainer" class="absolute inset-0 hidden z-20">
+                        <img id="previewImage" class="w-full h-full object-cover rounded-[3rem]">
+                        <div class="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
+                        <div id="scanline" class="scanline"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Results Section -->
+            <div class="lg:col-span-7 space-y-8 flex flex-col">
+                <div class="flex items-center space-x-4 px-2">
+                    <div class="w-1 h-4 bg-emerald-500 rounded-full"></div>
+                    <h3 class="text-xs font-black tracking-[0.25em] uppercase text-slate-500">Diagnostic Intelligence</h3>
+                </div>
+
+                <div id="resultCard" class="glass-card rounded-[3rem] p-12 flex-1 flex flex-col justify-center relative overflow-hidden opacity-70">
+                    <div class="results-glow"></div>
+                    
+                    <div id="initialState" class="text-center space-y-8 relative z-10">
+                        <div class="w-20 h-20 rounded-3xl bg-slate-900/50 border border-slate-800 flex items-center justify-center mx-auto text-slate-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
+                        </div>
+                        <p class="text-slate-600 font-bold tracking-widest uppercase text-xs">System Ready | Awaiting Input</p>
+                    </div>
+
+                    <div id="analysisState" class="hidden space-y-16 relative z-10">
+                        <div class="space-y-3">
+                            <div class="flex items-center space-x-3 text-emerald-400 text-[10px] font-black tracking-[0.3em] uppercase">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></span>
+                                <span>Diagnostic Confirmed</span>
+                            </div>
+                            <h2 id="resultClass" class="text-6xl md:text-7xl font-black text-gradient-primary tracking-tight">Healthy</h2>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="flex justify-between items-end">
+                                <div class="space-y-1">
+                                    <span class="text-[10px] font-black tracking-[0.3em] uppercase text-slate-500">Neural Confidence</span>
+                                    <div class="flex items-baseline space-x-2">
+                                        <span id="resultConfidence" class="text-5xl font-black text-white">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="w-full h-3 bg-slate-900 rounded-full p-0.5 overflow-hidden border border-slate-800">
+                                <div id="confidenceBar" class="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(16,185,129,0.3)]" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="glass-panel p-8 space-y-6 relative overflow-hidden">
+                            <div class="flex items-center space-x-3 text-slate-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                                <h4 class="text-xs font-black tracking-widest uppercase">Protocol Recommendation</h4>
+                            </div>
+                            <p id="resultRecommendation" class="text-slate-400 leading-relaxed font-medium">Processing...</p>
+                        </div>
+
+                        <button onclick="resetUI()" class="w-full flex items-center justify-center space-x-3 group border-t border-slate-800 mt-8 pt-10 hover:text-emerald-400 transition-colors">
+                            <span class="text-xs font-black tracking-[0.3em] uppercase text-slate-500 group-hover:text-emerald-400 transition-colors">Terminate & Reset</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="translate-y-[-1px]"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                        </button>
+                    </div>
+
+                    <div id="loadingState" class="hidden absolute inset-0 bg-slate-950/80 backdrop-blur-xl flex flex-col items-center justify-center space-y-8 z-30">
+                        <div class="relative">
+                            <div class="w-20 h-20 rounded-full border-4 border-emerald-500/10 border-t-emerald-500 animate-spin"></div>
+                            <div class="absolute inset-4 rounded-full border-4 border-emerald-500/5 border-b-emerald-400 animate-spin-slow"></div>
+                        </div>
+                        <div class="text-center space-y-2">
+                            <p class="text-xs font-black tracking-[0.5em] uppercase text-emerald-500 animate-pulse">Processing Neural Nets</p>
+                            <p class="text-[10px] font-medium text-slate-500 uppercase tracking-widest">Optimizing Weights...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const dropzone = document.getElementById('dropzone');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewImage = document.getElementById('previewImage');
+        const loadingState = document.getElementById('loadingState');
+        const analysisState = document.getElementById('analysisState');
+        const initialState = document.getElementById('initialState');
+        const resultCard = document.getElementById('resultCard');
+        const scanline = document.getElementById('scanline');
+        
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('bg-white/[0.08]');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('bg-white/[0.08]');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('bg-white/[0.08]');
+            if (e.dataTransfer.files.length > 0) {
+                handleFileUpload(e.dataTransfer.files[0]);
+            }
+        });
+
+        function handleFileUpload(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewContainer.classList.remove('hidden');
+                
+                // Show loading and start scanning
+                startAnalysis(file);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function startAnalysis(file) {
+            loadingState.classList.remove('hidden');
+            initialState.classList.add('hidden');
+            analysisState.classList.add('hidden');
+            resultCard.classList.remove('opacity-50');
+            scanline.style.display = 'block';
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.error) throw new Error(data.error);
+
+                // Simulate processing time for "wow" effect
+                setTimeout(() => {
+                    displayResult(data);
+                }, 2000);
+
+            } catch (error) {
+                alert('Analysis failed: ' + error.message);
+                resetUI();
+            }
+        }
+
+        function displayResult(data) {
+            loadingState.classList.add('hidden');
+            analysisState.classList.remove('hidden');
+            scanline.style.display = 'none';
+
+            const resultClass = document.getElementById('resultClass');
+            const resultConfidence = document.getElementById('resultConfidence');
+            const confidenceBar = document.getElementById('confidenceBar');
+            const resultRecommendation = document.getElementById('resultRecommendation');
+
+            if (data.class === "Invalid Specimen") {
+                resultClass.innerText = "Invalid Specimen";
+                resultClass.classList.remove('text-gradient-primary');
+                resultClass.classList.add('text-orange-500');
+                
+                resultConfidence.innerText = "N/A";
+                confidenceBar.style.width = "0%";
+                confidenceBar.classList.remove('from-emerald-600', 'to-emerald-400');
+                confidenceBar.classList.add('from-orange-600', 'to-orange-400');
+                
+                resultRecommendation.innerText = "The uploaded image does not appear to be a plant leaf. Please ensure you are uploading a clear, well-lit photo of a single potato leaf for accurate analysis.";
+                resultRecommendation.classList.add('text-orange-400/80');
+            } else {
+                resultClass.innerText = data.class;
+                resultClass.classList.add('text-gradient-primary');
+                resultClass.classList.remove('text-orange-500');
+                
+                resultConfidence.innerText = (data.confidence * 100).toFixed(1) + '%';
+                confidenceBar.style.width = (data.confidence * 100) + '%';
+                confidenceBar.classList.add('from-emerald-600', 'to-emerald-400');
+                confidenceBar.classList.remove('from-orange-600', 'to-orange-400');
+                
+                let rec = "";
+                if (data.class.includes("Healthy")) {
+                    rec = "The plant is healthy! Continue regular monitoring and optimize irrigation and nutrient levels.";
+                } else if (data.class.includes("Early Blight")) {
+                    rec = "Early Blight detected. Apply fungicide, remove infected debris, and avoid overhead watering to prevent spread.";
+                } else {
+                    rec = "Late Blight detected! IMMEDIATE action required. Apply intensive fungicide and isolate infected areas.";
+                }
+                resultRecommendation.innerText = rec;
+                resultRecommendation.classList.remove('text-orange-400/80');
+            }
+        }
+
+        function resetUI() {
+            previewContainer.classList.add('hidden');
+            initialState.classList.remove('hidden');
+            analysisState.classList.add('hidden');
+            loadingState.classList.add('hidden');
+            resultCard.classList.remove('opacity-70');
+            resultCard.classList.add('opacity-100');
+            fileInput.value = "";
+        }
+    </script>
+</body>
+</html>
+```
